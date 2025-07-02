@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- nango_v1alpha1_nangointegration.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

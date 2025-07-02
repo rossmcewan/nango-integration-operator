@@ -1,0 +1,24 @@
+apiVersion: nango.nango.dev/v1alpha1
+kind: NangoIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: nango-integration-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: nangointegration-sample
+spec:
+  # Unique key for the integration (required)
+  unique_key: "slack-nango-community"
+  # Provider name (required)
+  provider: "slack"
+  # Display name for the integration (required)
+  display_name: "Slack"
+  # OAuth credentials (required)
+  credentials:
+    type: "OAUTH1"
+    client_id: "your-slack-client-id"
+    client_secret: "your-slack-client-secret"
+    scopes: "chat:write,channels:read"
+  # Nango API token for authentication (optional - can be set via environment variable)
+  nango_token: "your-nango-api-token"
+  # Nango API base URL (optional - defaults to https://api.nango.dev)
+  nango_base_url: "https://api.nango.dev"
