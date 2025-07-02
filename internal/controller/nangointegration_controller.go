@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -41,6 +43,7 @@ type NangoIntegrationReconciler struct {
 // +kubebuilder:rbac:groups=nango.nango.dev,resources=nangointegrations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nango.nango.dev,resources=nangointegrations/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=nango.nango.dev,resources=nangointegrations/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -70,8 +73,27 @@ func (r *NangoIntegrationReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	// Resolve secret references
+	clientID, err := r.resolveSecretOrStringValue(ctx, nangoIntegration.Namespace, nangoIntegration.Spec.Credentials.ClientID)
+	if err != nil {
+		log.Error(err, "Failed to resolve client ID")
+		return r.updateStatus(ctx, nangoIntegration, "Failed", fmt.Sprintf("Failed to resolve client ID: %v", err), err)
+	}
+
+	clientSecret, err := r.resolveSecretOrStringValue(ctx, nangoIntegration.Namespace, nangoIntegration.Spec.Credentials.ClientSecret)
+	if err != nil {
+		log.Error(err, "Failed to resolve client secret")
+		return r.updateStatus(ctx, nangoIntegration, "Failed", fmt.Sprintf("Failed to resolve client secret: %v", err), err)
+	}
+
+	nangoToken, err := r.resolveSecretOrStringValue(ctx, nangoIntegration.Namespace, nangoIntegration.Spec.NangoToken)
+	if err != nil {
+		log.Error(err, "Failed to resolve Nango token")
+		return r.updateStatus(ctx, nangoIntegration, "Failed", fmt.Sprintf("Failed to resolve Nango token: %v", err), err)
+	}
+
 	// Check if the integration already exists in Nango
-	nangoClient := nango.NewClient(nangoIntegration.Spec.NangoBaseURL, nangoIntegration.Spec.NangoToken)
+	nangoClient := nango.NewClient(nangoIntegration.Spec.NangoBaseURL, nangoToken)
 
 	// Try to get the integration from Nango
 	_, err = nangoClient.GetIntegration(nangoIntegration.Spec.UniqueKey)
@@ -91,8 +113,8 @@ func (r *NangoIntegrationReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		DisplayName: nangoIntegration.Spec.DisplayName,
 		Credentials: nango.NangoCredentials{
 			Type:         nangoIntegration.Spec.Credentials.Type,
-			ClientID:     nangoIntegration.Spec.Credentials.ClientID,
-			ClientSecret: nangoIntegration.Spec.Credentials.ClientSecret,
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
 			Scopes:       nangoIntegration.Spec.Credentials.Scopes,
 		},
 	}
@@ -109,6 +131,35 @@ func (r *NangoIntegrationReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		"provider", response.Data.Provider)
 
 	return r.updateStatus(ctx, nangoIntegration, "Created", "", nil)
+}
+
+// resolveSecretOrStringValue resolves a value from either a direct string or a secret reference
+func (r *NangoIntegrationReconciler) resolveSecretOrStringValue(ctx context.Context, namespace string, secretOrString nangov1alpha1.SecretOrStringValue) (string, error) {
+	// If direct value is provided, use it
+	if secretOrString.Value != "" {
+		return secretOrString.Value, nil
+	}
+
+	// If secret reference is provided, resolve it
+	if secretOrString.SecretKeyRef != nil {
+		secret := &corev1.Secret{}
+		err := r.Get(ctx, types.NamespacedName{
+			Namespace: namespace,
+			Name:      secretOrString.SecretKeyRef.Name,
+		}, secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to get secret %s: %w", secretOrString.SecretKeyRef.Name, err)
+		}
+
+		value, exists := secret.Data[secretOrString.SecretKeyRef.Key]
+		if !exists {
+			return "", fmt.Errorf("key %s not found in secret %s", secretOrString.SecretKeyRef.Key, secretOrString.SecretKeyRef.Name)
+		}
+
+		return string(value), nil
+	}
+
+	return "", fmt.Errorf("neither value nor secretKeyRef provided")
 }
 
 // updateStatus updates the status of the NangoIntegration resource

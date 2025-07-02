@@ -15,10 +15,33 @@ spec:
   # OAuth credentials (required)
   credentials:
     type: "OAUTH1"
-    client_id: "your-slack-client-id"
-    client_secret: "your-slack-client-secret"
+    # Option 1: Direct values (not recommended for production)
+    # client_id:
+    #   value: "your-slack-client-id"
+    # client_secret:
+    #   value: "your-slack-client-secret"
+    
+    # Option 2: Secret references (recommended for production)
+    client_id:
+      secretKeyRef:
+        name: "slack-oauth-secret"
+        key: "client_id"
+    client_secret:
+      secretKeyRef:
+        name: "slack-oauth-secret"
+        key: "client_secret"
     scopes: "chat:write,channels:read"
-  # Nango API token for authentication (optional - can be set via environment variable)
-  nango_token: "your-nango-api-token"
+  
+  # Nango API token (optional)
+  # Option 1: Direct value (not recommended for production)
+  # nango_token:
+  #   value: "your-nango-api-token"
+  
+  # Option 2: Secret reference (recommended for production)
+  nango_token:
+    secretKeyRef:
+      name: "nango-api-secret"
+      key: "token"
+  
   # Nango API base URL (optional - defaults to https://api.nango.dev)
   nango_base_url: "https://api.nango.dev"

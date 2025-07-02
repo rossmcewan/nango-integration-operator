@@ -71,13 +71,13 @@ spec:
 - `display_name`: Human-readable name for the integration
 - `credentials`: OAuth credentials for the integration
   - `type`: Authentication type (e.g., "OAUTH1", "OAUTH2")
-  - `client_id`: OAuth client ID
-  - `client_secret`: OAuth client secret
+  - `client_id`: OAuth client ID (can be a string value or secretKeyRef)
+  - `client_secret`: OAuth client secret (can be a string value or secretKeyRef)
   - `scopes`: Required OAuth scopes (optional)
 
 ### Optional Fields
 
-- `nango_token`: Your Nango API token for authentication
+- `nango_token`: Your Nango API token for authentication (can be a string value or secretKeyRef)
 - `nango_base_url`: Custom Nango API base URL (defaults to https://api.nango.dev)
 
 ### Checking Integration Status
@@ -133,41 +133,98 @@ spec:
 
 ## Security Considerations
 
-### API Token Management
+### Secret References (Recommended for Production)
 
-For production deployments, consider using Kubernetes secrets to store the Nango API token:
+The operator supports referencing sensitive values from Kubernetes secrets. This is the recommended approach for production deployments.
+
+#### Creating Secrets
+
+First, create the secrets with your credentials:
 
 ```yaml
+# OAuth credentials secret
 apiVersion: v1
 kind: Secret
 metadata:
-  name: nango-api-token
-type: Opaque
-data:
-  token: <base64-encoded-token>
----
-apiVersion: nango.nango.dev/v1alpha1
-kind: NangoIntegration
-metadata:
-  name: secure-integration
-spec:
-  # ... other fields ...
-  nango_token: "$(NANGO_TOKEN)"  # Reference from environment variable
-```
-
-### OAuth Credentials
-
-Store OAuth credentials securely using Kubernetes secrets:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: oauth-credentials
+  name: slack-oauth-secret
+  namespace: default
 type: Opaque
 data:
   client_id: <base64-encoded-client-id>
   client_secret: <base64-encoded-client-secret>
+
+---
+# Nango API token secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nango-api-secret
+  namespace: default
+type: Opaque
+data:
+  token: <base64-encoded-nango-token>
+```
+
+#### Using Secret References
+
+Reference the secrets in your NangoIntegration:
+
+```yaml
+apiVersion: nango.nango.dev/v1alpha1
+kind: NangoIntegration
+metadata:
+  name: secure-slack-integration
+spec:
+  unique_key: "slack-secure"
+  provider: "slack"
+  display_name: "Slack Integration"
+  credentials:
+    type: "OAUTH1"
+    client_id:
+      secretKeyRef:
+        name: "slack-oauth-secret"
+        key: "client_id"
+    client_secret:
+      secretKeyRef:
+        name: "slack-oauth-secret"
+        key: "client_secret"
+    scopes: "chat:write,channels:read"
+  nango_token:
+    secretKeyRef:
+      name: "nango-api-secret"
+      key: "token"
+```
+
+#### Using Direct Values (for development/testing)
+
+```yaml
+apiVersion: nango.nango.dev/v1alpha1
+kind: NangoIntegration
+metadata:
+  name: dev-slack-integration
+spec:
+  unique_key: "slack-dev"
+  provider: "slack"
+  display_name: "Slack Integration (Dev)"
+  credentials:
+    type: "OAUTH1"
+    client_id:
+      value: "your-client-id"
+    client_secret:
+      value: "your-client-secret"
+    scopes: "chat:write,channels:read"
+  nango_token:
+    value: "your-nango-token"
+```
+
+#### Encoding Values
+
+To encode your values for the secret:
+
+```bash
+echo -n "your-client-id" | base64
+echo -n "your-client-secret" | base64
+echo -n "your-nango-token" | base64
 ```
 
 ## Troubleshooting

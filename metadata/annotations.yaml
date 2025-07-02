@@ -1,0 +1,11 @@
+annotations:
+  operators.operatorframework.io.bundle.mediatype.v1: registry+v1
+  operators.operatorframework.io.bundle.manifests.v1: manifests/
+  operators.operatorframework.io.bundle.metadata.v1: metadata/
+  operators.operatorframework.io.bundle.package.v1: nango-integration-operator
+  operators.operatorframework.io.bundle.channels.v1: alpha
+  operators.operatorframework.io.bundle.channel.default.v1: alpha
+  operators.operatorframework.io.bundle.description: "A Kubernetes operator for managing Nango integrations declaratively"
+  operators.operatorframework.io.bundle.maintainers: '[{"name":"Ross McEwan","email":"ross@example.com"}]'
+  operators.operatorframework.io.bundle.providers: '[{"name":"Ross McEwan"}]'
+  operators.operatorframework.io.bundle.website: "https://github.com/rossmcewan/nango-integration-operator" 

@@ -43,11 +43,69 @@ spec:
                 description: OAuth credentials for the integration (required)
                 properties:
                   client_id:
-                    description: Client ID for the OAuth application
-                    type: string
+                    description: Client ID for the OAuth application (either direct
+                      value or secret reference)
+                    properties:
+                      secretKeyRef:
+                        description: Secret reference (mutually exclusive with value)
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      value:
+                        description: String value (mutually exclusive with secretKeyRef)
+                        type: string
+                    type: object
                   client_secret:
-                    description: Client Secret for the OAuth application
-                    type: string
+                    description: Client Secret for the OAuth application (either direct
+                      value or secret reference)
+                    properties:
+                      secretKeyRef:
+                        description: Secret reference (mutually exclusive with value)
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      value:
+                        description: String value (mutually exclusive with secretKeyRef)
+                        type: string
+                    type: object
                   scopes:
                     description: Scopes required for the integration
                     type: string
@@ -66,8 +124,37 @@ spec:
                 description: Nango API base URL (optional, defaults to https://api.nango.dev)
                 type: string
               nango_token:
-                description: Nango API token for authentication
-                type: string
+                description: Nango API token for authentication (either direct value
+                  or secret reference)
+                properties:
+                  secretKeyRef:
+                    description: Secret reference (mutually exclusive with value)
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  value:
+                    description: String value (mutually exclusive with secretKeyRef)
+                    type: string
+                type: object
               provider:
                 description: Provider name (e.g., "slack", "github") (required)
                 type: string

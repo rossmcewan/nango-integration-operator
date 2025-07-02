@@ -17,20 +17,29 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// SecretOrStringValue represents a value that can be either a string or a secret reference
+type SecretOrStringValue struct {
+	// String value (mutually exclusive with secretKeyRef)
+	Value string `json:"value,omitempty"`
+	// Secret reference (mutually exclusive with value)
+	SecretKeyRef *corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
+}
+
 // NangoCredentials defines the OAuth credentials for the integration
 type NangoCredentials struct {
 	// Type of authentication (e.g., OAUTH1, OAUTH2)
 	Type string `json:"type"`
-	// Client ID for the OAuth application
-	ClientID string `json:"client_id"`
-	// Client Secret for the OAuth application
-	ClientSecret string `json:"client_secret"`
+	// Client ID for the OAuth application (either direct value or secret reference)
+	ClientID SecretOrStringValue `json:"client_id"`
+	// Client Secret for the OAuth application (either direct value or secret reference)
+	ClientSecret SecretOrStringValue `json:"client_secret"`
 	// Scopes required for the integration
 	Scopes string `json:"scopes,omitempty"`
 }
@@ -48,8 +57,8 @@ type NangoIntegrationSpec struct {
 	DisplayName string `json:"display_name"`
 	// OAuth credentials for the integration (required)
 	Credentials NangoCredentials `json:"credentials"`
-	// Nango API token for authentication
-	NangoToken string `json:"nango_token,omitempty"`
+	// Nango API token for authentication (either direct value or secret reference)
+	NangoToken SecretOrStringValue `json:"nango_token,omitempty"`
 	// Nango API base URL (optional, defaults to https://api.nango.dev)
 	NangoBaseURL string `json:"nango_base_url,omitempty"`
 }
